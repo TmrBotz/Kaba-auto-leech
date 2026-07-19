@@ -28,8 +28,8 @@ from helpers import (
 # ─── Config ──────────────────────────────────────────────────────────────────
 
 KABA_API_URL       = "https://kabaapi.tmrbotz.workers.dev/"
-AUTO_LEECH_CHANNEL = int(os.environ.get("AUTO_LEECH_CHANNEL", "-1003830839887"))
-POLL_INTERVAL      = 10 * 60        # 10 minutes
+AUTO_LEECH_CHANNEL = int(os.environ.get("AUTO_LEECH_CHANNEL", "-1002205504138"))
+POLL_INTERVAL      = 5 * 60        # 10 minutes
 CHUNK_SIZE         = 1024 * 1024    # 1 MB
 MONGO_URI          = os.environ.get("MONGO_URI", "")
 MONGO_DB           = "kaba"
@@ -201,7 +201,7 @@ async def download_mp4(url: str, title: str, progress_cb=None):
             filename  = extract_filename(str(resp.url), content_disp, content_type)
             # Prefix add karo
             name, ext = os.path.splitext(filename)
-            filename  = f"[@Skyhub4u] {name}{ext}"
+            filename  = f"[@NT_Hub] {name}{ext}"
 
             file_path = os.path.join(DOWNLOAD_DIR, filename)
             base, ext = os.path.splitext(file_path)
@@ -271,9 +271,8 @@ async def process_post(client: Client, post: dict) -> bool:
         status_msg = await client.send_message(
             chat_id=AUTO_LEECH_CHANNEL,
             text=(
-                f"⏳ **Auto Leech Shuru...**\n\n"
+                f"⏳ **Auto Leech Start...**\n\n"
                 f"🎬 `{title}`\n"
-                f"🔗 [Post Link]({page_url})"
             ),
         )
     except Exception as e:
@@ -360,8 +359,6 @@ async def process_post(client: Client, post: dict) -> bool:
 
         caption = (
             f"🎬 **{title}**\n\n"
-            f"🔗 [Post Link]({page_url})\n\n"
-            f"#AutoLeech #Kamababax"
         )
 
         await client.send_video(
@@ -384,17 +381,6 @@ async def process_post(client: Client, post: dict) -> bool:
                 pass
 
         log.info(f"  ✅ Uploaded in {elapsed:.1f}s")
-
-        # Final done message
-        await client.send_message(
-            chat_id=AUTO_LEECH_CHANNEL,
-            text=(
-                f"✅ **Upload Done!**\n\n"
-                f"🎬 `{title}`\n"
-                f"📦 `{human_size(file_size)}`\n"
-                f"⏱️ Total: `{format_eta(elapsed)}`"
-            ),
-        )
 
         await mark_processed(post_id, title)
         return True
@@ -443,7 +429,7 @@ async def auto_leech_loop(client: Client):
                 log.info(f"🆕 {len(new_posts)} naye post(s) mile")
                 for post in new_posts:
                     await process_post(client, post)
-                    await asyncio.sleep(30)   # Posts ke beech 30 sec gap
+                    await asyncio.sleep(10)   # Posts ke beech 10 sec gap
             else:
                 log.info("Koi naya post nahi mila")
 
