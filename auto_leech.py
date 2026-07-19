@@ -28,7 +28,7 @@ from helpers import (
 # ─── Config ──────────────────────────────────────────────────────────────────
 
 KABA_API_URL       = "https://kabaapi.tmrbotz.workers.dev/"
-AUTO_LEECH_CHANNEL = int(os.environ.get("AUTO_LEECH_CHANNEL", "-1002205504138"))
+AUTO_LEECH_CHANNEL = int(os.environ.get("AUTO_LEECH_CHANNEL", "-1003830839887"))
 POLL_INTERVAL      = 10 * 60        # 10 minutes
 CHUNK_SIZE         = 1024 * 1024    # 1 MB
 MONGO_URI          = os.environ.get("MONGO_URI", "")
