@@ -1,10 +1,11 @@
 """
 ╔══════════════════════════════════════════════════════════════╗
-║               AUTO LEECH MODULE — KabaAPI                    ║
+║               AUTO LEECH MODULE — KabaAPI + LalamAsA         ║
 ║                                                              ║
 ║  Har 10 min mein KabaAPI call karta hai.                     ║
 ║  Naye posts ka mp4_url download karke                        ║
 ║  AUTO_LEECH_CHANNEL pe upload kar deta hai.                  ║
+║  KabaAPI complete hone ke baad LalamAsA API call hoti hai.   ║
 ║  Thumbnail: API se directly | Duration: ffprobe              ║
 ╚══════════════════════════════════════════════════════════════╝
 """
@@ -28,6 +29,7 @@ from helpers import (
 # ─── Config ──────────────────────────────────────────────────────────────────
 
 KABA_API_URL       = "https://kabaapi.tmrbotz.workers.dev/"
+LALA_API_URL       = "https://lalamasa-api.tmrbotz.workers.dev/"
 AUTO_LEECH_CHANNEL = int(os.environ.get("AUTO_LEECH_CHANNEL", "-1002205504138"))
 POLL_INTERVAL      = 5 * 60        # 10 minutes
 CHUNK_SIZE         = 1024 * 1024    # 1 MB
@@ -78,35 +80,35 @@ async def mark_processed(post_id: str, title: str) -> None:
     log.info(f"✅ MongoDB: marked [{post_id}]")
 
 
-# ─── KabaAPI Fetch ───────────────────────────────────────────────────────────
+# ─── API Fetch ───────────────────────────────────────────────────────────────
 
-async def fetch_new_posts() -> list:
+async def fetch_new_posts(api_url: str) -> list:
     """
-    KabaAPI se posts fetch karo, duplicate filter karo.
+    API se posts fetch karo, duplicate filter karo.
     Returns: list of new posts
     """
     try:
         timeout = aiohttp.ClientTimeout(total=30)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(KABA_API_URL) as resp:
+            async with session.get(api_url) as resp:
                 if resp.status != 200:
-                    log.warning(f"KabaAPI: HTTP {resp.status}")
+                    log.warning(f"API [{api_url}]: HTTP {resp.status}")
                     return []
                 data = await resp.json(content_type=None)
     except Exception as e:
-        log.warning(f"KabaAPI fetch error: {e}")
+        log.warning(f"API fetch error [{api_url}]: {e}")
         return []
 
     if not data.get("success"):
-        log.warning("KabaAPI: success=false")
+        log.warning(f"API [{api_url}]: success=false")
         return []
 
     posts = data.get("posts", [])
     if not posts:
-        log.info("KabaAPI: koi post nahi mila")
+        log.info(f"API [{api_url}]: koi post nahi mila")
         return []
 
-    log.info(f"📋 KabaAPI: {len(posts)} posts mile")
+    log.info(f"📋 API [{api_url}]: {len(posts)} posts mile")
 
     # MongoDB batch duplicate check
     all_ids       = [p["post_id"] for p in posts]
@@ -410,7 +412,7 @@ async def process_post(client: Client, post: dict) -> bool:
 # ─── Main Loop ────────────────────────────────────────────────────────────────
 
 async def auto_leech_loop(client: Client):
-    """Background task — har POLL_INTERVAL seconds mein KabaAPI poll karta hai."""
+    """Background task — har POLL_INTERVAL seconds mein dono APIs poll karta hai."""
     log.info(f"🤖 AutoLeech loop started — polling every {POLL_INTERVAL // 60} min")
     log.info(f"📢 Target channel: {AUTO_LEECH_CHANNEL}")
 
@@ -422,16 +424,29 @@ async def auto_leech_loop(client: Client):
 
     while True:
         try:
+            # ── STEP 1: KabaAPI ─────────────────────────────────────────────
             log.info("🔄 KabaAPI poll kar raha hoon...")
-            new_posts = await fetch_new_posts()
+            kaba_posts = await fetch_new_posts(KABA_API_URL)
 
-            if new_posts:
-                log.info(f"🆕 {len(new_posts)} naye post(s) mile")
-                for post in new_posts:
+            if kaba_posts:
+                log.info(f"🆕 KabaAPI: {len(kaba_posts)} naye post(s) mile")
+                for post in kaba_posts:
                     await process_post(client, post)
-                    await asyncio.sleep(10)   # Posts ke beech 10 sec gap
+                    await asyncio.sleep(10)
             else:
-                log.info("Koi naya post nahi mila")
+                log.info("KabaAPI: koi naya post nahi mila")
+
+            # ── STEP 2: LalamAsA API (KabaAPI complete hone ke baad) ────────
+            log.info("🔄 LalamAsA API poll kar raha hoon...")
+            lala_posts = await fetch_new_posts(LALA_API_URL)
+
+            if lala_posts:
+                log.info(f"🆕 LalamAsA: {len(lala_posts)} naye post(s) mile")
+                for post in lala_posts:
+                    await process_post(client, post)
+                    await asyncio.sleep(10)
+            else:
+                log.info("LalamAsA: koi naya post nahi mila")
 
         except Exception as e:
             log.exception(f"AutoLeech loop error (continuing): {e}")
