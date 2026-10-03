@@ -1,11 +1,11 @@
 """
 ╔══════════════════════════════════════════════════════════════╗
-║          AUTO LEECH MODULE — KabaAPI + LalamAsA + Panu69     ║
+║        AUTO LEECH MODULE — Kaba + Lala + Panu69 + More       ║
 ║                                                              ║
 ║  Har 10 min mein KabaAPI call karta hai.                     ║
 ║  Naye posts ka mp4_url download karke                        ║
 ║  AUTO_LEECH_CHANNEL pe upload kar deta hai.                  ║
-║  KabaAPI ke baad LalamAsA, phir Panu69 API call hoti hai.    ║
+║  APIs ek-ek karke chalti hain (Kaba→Lala→Panu→Masafum→Spicy) ║
 ║  Thumbnail: API se directly | Duration: ffprobe              ║
 ╚══════════════════════════════════════════════════════════════╝
 """
@@ -31,6 +31,8 @@ from helpers import (
 KABA_API_URL       = "https://kabaapi.tmrbotz.workers.dev/"
 LALA_API_URL       = "https://lalamasa-api.tmrbotz.workers.dev/"
 PANU_API_URL       = "https://panu69api.tmrbotz.workers.dev/"
+MASAFUM_API_URL    = "https://masafumapi.tmrbotz.workers.dev/"
+SPICYMM_API_URL    = "https://spicymmapi.tmrbotz.workers.dev/"
 AUTO_LEECH_CHANNEL = int(os.environ.get("AUTO_LEECH_CHANNEL", "-1002205504138"))
 POLL_INTERVAL      = 5 * 60        # 10 minutes
 CHUNK_SIZE         = 1024 * 1024    # 1 MB
@@ -413,7 +415,7 @@ async def process_post(client: Client, post: dict) -> bool:
 # ─── Main Loop ────────────────────────────────────────────────────────────────
 
 async def auto_leech_loop(client: Client):
-    """Background task — har POLL_INTERVAL seconds mein teeno APIs poll karta hai."""
+    """Background task — har POLL_INTERVAL seconds mein saari APIs ek-ek karke poll karta hai."""
     log.info(f"🤖 AutoLeech loop started — polling every {POLL_INTERVAL // 60} min")
     log.info(f"📢 Target channel: {AUTO_LEECH_CHANNEL}")
 
@@ -460,6 +462,30 @@ async def auto_leech_loop(client: Client):
                     await asyncio.sleep(10)
             else:
                 log.info("Panu69: koi naya post nahi mila")
+
+            # ── STEP 4: Masafum API (Panu69 complete hone ke baad) ──────────
+            log.info("🔄 Masafum API poll kar raha hoon...")
+            masafum_posts = await fetch_new_posts(MASAFUM_API_URL)
+
+            if masafum_posts:
+                log.info(f"🆕 Masafum: {len(masafum_posts)} naye post(s) mile")
+                for post in masafum_posts:
+                    await process_post(client, post)
+                    await asyncio.sleep(10)
+            else:
+                log.info("Masafum: koi naya post nahi mila")
+
+            # ── STEP 5: SpicyMM API (Masafum complete hone ke baad) ─────────
+            log.info("🔄 SpicyMM API poll kar raha hoon...")
+            spicymm_posts = await fetch_new_posts(SPICYMM_API_URL)
+
+            if spicymm_posts:
+                log.info(f"🆕 SpicyMM: {len(spicymm_posts)} naye post(s) mile")
+                for post in spicymm_posts:
+                    await process_post(client, post)
+                    await asyncio.sleep(10)
+            else:
+                log.info("SpicyMM: koi naya post nahi mila")
 
         except Exception as e:
             log.exception(f"AutoLeech loop error (continuing): {e}")
