@@ -1,11 +1,11 @@
 """
 ╔══════════════════════════════════════════════════════════════╗
-║               AUTO LEECH MODULE — KabaAPI + LalamAsA         ║
+║          AUTO LEECH MODULE — KabaAPI + LalamAsA + Panu69     ║
 ║                                                              ║
 ║  Har 10 min mein KabaAPI call karta hai.                     ║
 ║  Naye posts ka mp4_url download karke                        ║
 ║  AUTO_LEECH_CHANNEL pe upload kar deta hai.                  ║
-║  KabaAPI complete hone ke baad LalamAsA API call hoti hai.   ║
+║  KabaAPI ke baad LalamAsA, phir Panu69 API call hoti hai.    ║
 ║  Thumbnail: API se directly | Duration: ffprobe              ║
 ╚══════════════════════════════════════════════════════════════╝
 """
@@ -30,6 +30,7 @@ from helpers import (
 
 KABA_API_URL       = "https://kabaapi.tmrbotz.workers.dev/"
 LALA_API_URL       = "https://lalamasa-api.tmrbotz.workers.dev/"
+PANU_API_URL       = "https://panu69api.tmrbotz.workers.dev/"
 AUTO_LEECH_CHANNEL = int(os.environ.get("AUTO_LEECH_CHANNEL", "-1002205504138"))
 POLL_INTERVAL      = 5 * 60        # 10 minutes
 CHUNK_SIZE         = 1024 * 1024    # 1 MB
@@ -412,7 +413,7 @@ async def process_post(client: Client, post: dict) -> bool:
 # ─── Main Loop ────────────────────────────────────────────────────────────────
 
 async def auto_leech_loop(client: Client):
-    """Background task — har POLL_INTERVAL seconds mein dono APIs poll karta hai."""
+    """Background task — har POLL_INTERVAL seconds mein teeno APIs poll karta hai."""
     log.info(f"🤖 AutoLeech loop started — polling every {POLL_INTERVAL // 60} min")
     log.info(f"📢 Target channel: {AUTO_LEECH_CHANNEL}")
 
@@ -447,6 +448,18 @@ async def auto_leech_loop(client: Client):
                     await asyncio.sleep(10)
             else:
                 log.info("LalamAsA: koi naya post nahi mila")
+
+            # ── STEP 3: Panu69 API (LalamAsA complete hone ke baad) ─────────
+            log.info("🔄 Panu69 API poll kar raha hoon...")
+            panu_posts = await fetch_new_posts(PANU_API_URL)
+
+            if panu_posts:
+                log.info(f"🆕 Panu69: {len(panu_posts)} naye post(s) mile")
+                for post in panu_posts:
+                    await process_post(client, post)
+                    await asyncio.sleep(10)
+            else:
+                log.info("Panu69: koi naya post nahi mila")
 
         except Exception as e:
             log.exception(f"AutoLeech loop error (continuing): {e}")
